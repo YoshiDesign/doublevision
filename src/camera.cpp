@@ -7,6 +7,9 @@
 #include <opencv2/imgproc.hpp>
 #include "gpiolib/gpiod.hpp"
 
+#define GPIO_0	"gpiochip0"
+#define GPIO_1	"gpiochip1"
+
 #define DEVICE_ID	0
 
 void detect_edges(cv::Mat& img, cv::Mat& out)
@@ -50,7 +53,8 @@ public:
 		// In case something was already cap'ing
 		cap.release();
 		// Acquire the camera feed
-		cap.open(device);
+		std::cout << device << std::endl;
+		cap.open(-1);
 		
 		// Assign & Call to member function pointer
 		// func = &Camera::check;
@@ -150,8 +154,10 @@ int main(int argc, char** argv )
 //	int apiID = cv::CAP_ANY;
 
 //	cap.open(DEVICE_ID + apiID);
-	gpiod::chip chip;
-	Camera camera(DEVICE_ID + cv::CAP_ANY);
+
+//	gpiod::chip chip;
+	cv::Mat fr;
+	Camera camera();
 	camera.run("edge");	
 
 	return 0;
