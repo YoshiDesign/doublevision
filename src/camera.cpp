@@ -5,6 +5,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc.hpp>
+#include "gpiolib/gpiod.hpp"
 
 #define DEVICE_ID	0
 
@@ -149,7 +150,7 @@ int main(int argc, char** argv )
 //	int apiID = cv::CAP_ANY;
 
 //	cap.open(DEVICE_ID + apiID);
-
+	gpiod::chip chip;
 	Camera camera(DEVICE_ID + cv::CAP_ANY);
 	camera.run("edge");	
 
