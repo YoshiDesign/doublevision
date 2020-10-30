@@ -9,3 +9,5 @@ build/
 *.a
 *.so
 *.la
+*.png
+*.jpg

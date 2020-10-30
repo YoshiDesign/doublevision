@@ -1,57 +1,49 @@
+#pragma once
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc.hpp>
 
-namespace vis {
+namespace vis { namespace camera {
 
-	namespace camera {
-		class Camera{
-		
-		public:
-			Camera();
-			Camera(int device);
-			void run(const char* type);
-			bool readNextFrame(cv::Mat& frame);
+	void detect_edges(cv::Mat& img, cv::Mat& out);
 
-			/*
-			 * Assigns a pointer to a callback fn
-			 * (Mat& in, Mat& out)
-			 */ 
-			void setFrameProcessor(void(*frameProCallback)(cv::Mat&, cv::Mat&))
+	/*
+	 *
+	 */
+	class Camera {
+	public:
+		Camera();
+		Camera(int device);
+		void run(const char* type);
+		bool readNextFrame(cv::Mat& frame);
 
-		private:
-			int device, useProcess;
-			cv::Mat frame;
-			cv::Mat outputFrame;
-			cv::VideoCapture cap;
-			FrameProcessor *frameproc;
-			void (*process)(cv::Mat&, cv::Mat&);
-			// void (Camera::*process)(const char*);
-			std::vector<std::string> images;
+		/*
+		 * Assigns a pointer to a callback fn
+		 * (Mat& in, Mat& out)
+		*/ 
+		void setFrameProcessor(void(*frameProCallback)(cv::Mat&, cv::Mat&));
 
-		};
-		
-		/* @class FrameProcessor
-		 * This class is only used to supply a callback function to Camera::(*process) function pointer
-		 */
-		class FrameProcessor {
-		
-		public: 
-			virtual void process(cv::Mat& input, cv::Mat& output) = 0;
-		
-		};
-	}
+	private:
+		int device, useProcess;
+//		cv::Mat frame;
+//		cv::Mat outputFrame;
+		cv::VideoCapture cap;
+		void (*process)(cv::Mat&, cv::Mat&) = nullptr;
+		std::vector<std::string> images;
+	};
 
-	namespace image {
-		class Image{
-		public:
-			Image();
-			Image(cv::Mat& img);
+} /* -- namespace camera*/ 
 
-		private:
-			cv::Mat img;
-		};	
-	
-	}
-}
+namespace image {
+
+	class Image{
+	public:
+		Image();
+		Image(cv::Mat& img);
+	private:
+		cv::Mat image;
+	};
+
+} // -- namespace image
+} // -- namespace vis

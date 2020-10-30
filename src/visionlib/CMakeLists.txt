@@ -1,1 +1,1 @@
-add_library(vision-cpp images.cpp camera.cpp visionlib.hpp)
+add_library(vision-cpp visionlib.hpp image.cpp camera.cpp)

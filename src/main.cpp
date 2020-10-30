@@ -7,7 +7,7 @@
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc.hpp>
 #include "gpiolib/gpiod.hpp"
-#include <visionlib.hpp>
+#include "visionlib/visionlib.hpp"
 
 #define GPIO_0	"gpiochip0"
 #define GPIO_1	"gpiochip1"
@@ -88,9 +88,8 @@ int main(int argc, char** argv )
 		line0.set_value(1);	
 	}
 	
-	cv::Mat fr;
-	Camera camera;
-	camera.run("edge");	
+	vis::camera::Camera cam = vis::camera::Camera();
+	cam.run("edge");	
 
 	return 0;
 	
