@@ -4,3 +4,8 @@ CMakeCache*
 cmake_*
 CMakeFiles/
 build/
+*.swo
+*.swp
+*.a
+*.so
+*.la
