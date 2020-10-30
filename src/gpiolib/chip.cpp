@@ -6,7 +6,7 @@
  */
 
 #include <functional>
-#include <gpiod.hpp>
+#include "gpiod.hpp"
 #include <map>
 #include <system_error>
 #include <utility>

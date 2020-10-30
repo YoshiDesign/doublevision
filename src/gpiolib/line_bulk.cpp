@@ -5,7 +5,7 @@
  * Copyright (C) 2017-2018 Bartosz Golaszewski <bartekgola@gmail.com>
  */
 
-#include <gpiod.hpp>
+#include "gpiod.hpp"
 #include <map>
 #include <system_error>
 
