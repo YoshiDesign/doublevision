@@ -26,7 +26,6 @@ namespace vis { namespace camera {
 
 	private:
 		int device, useProcess;
-//		cv::Mat frame;
 //		cv::Mat outputFrame;
 		cv::VideoCapture cap;
 		void (*process)(cv::Mat&, cv::Mat&) = nullptr;

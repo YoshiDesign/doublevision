@@ -2,7 +2,7 @@
 #include <opencv2/opencv.hpp>
 #include "visionlib.hpp"
 
-#define LOG(m) std::cout << m << std:endl;
+#define LOG(m) std::cout << m << std:endl
 
 namespace vis { namespace image {
 	

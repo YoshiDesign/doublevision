@@ -8,7 +8,8 @@
 #include <opencv2/videoio.hpp>
 #include "visionlib.hpp"
 
-#define LOG(m) std::cout << m << std::endl;
+#define LOG(m) std::cout << m << std::endl
+#define ELOG(m) std::cerr << m << std::endl
 
 namespace vis { namespace camera {
 
@@ -30,33 +31,31 @@ void detect_edges(cv::Mat& img, cv::Mat& out)
 Camera::Camera(){
 	this->device = 0;
 	this->useProcess = 0;
-		
-}	
-Camera::Camera(int device): device(device){}
+}
+Camera::Camera(int device): device{device}{}
 
 void Camera::run(const char *type = "default")
 {	
+	// Original frame
 	cv::Mat frame;
+	// Used as processed frame
 	cv::Mat outputFrame;
-
-	// In case something was already cap'ing
+	
+	// Acquire the camera resource 
 	cap.release();
-	// Acquire the camera feed
 	cap.open(0);
 	
 	if (!cap.isOpened())
 	{
-		std::cerr << "Error opening capture device" << std::endl;
+		ELOG("Error opening Capture device.");
 	}
 
-	if (strcmp(type, "edge")==0) {
+	if (strcmp(type, "edge") == 0) {
 		// Perform edge detection when broadcasting
 		useProcess = 1;
 		setFrameProcessor(detect_edges);
 		process(frame, outputFrame);
 	}
-
-	std::cout << "Processing frames..." << std::endl;	
 
 	// Capture loop
 	for (;;)
@@ -70,10 +69,8 @@ void Camera::run(const char *type = "default")
 
 		if (useProcess)
 		{
-			std::cout << "Processing Frame" << std::endl;
 			process(frame, outputFrame);
 		} else {
-			std::cout << "Non-processed Frame" << std::endl;
 			outputFrame = frame;
 		}
 
@@ -89,11 +86,10 @@ bool Camera::readNextFrame(cv::Mat& frame)
 {
 	if (images.size() == 0)
 	{
-		std::cout << "Cap Frames" << std::endl;
 		return cap.read(frame);
 
 	} else {
-		std::cerr << "No Images to apply to frame" << std::endl;
+		LOG("End of frame sequence");
 		return false;
 	}	
 }

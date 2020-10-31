@@ -2,6 +2,7 @@
 #include <vector>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <unistd.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
@@ -14,6 +15,13 @@
 
 #define DEVICE_ID	0
 
+#define LOG(a) std::cout << a << std::endl
+
+std::chrono::seconds sec(1000);
+void sayhi()
+{
+	std::cout << "Hi!" << std::endl;
+}
 void inspect_line(gpiod::line& ln)
 {
 		
@@ -30,6 +38,36 @@ void inspect_line(gpiod::line& ln)
 
 }
 
+struct SingleEventInput {
+
+	/**
+	 * Construct a line request
+	 */ 
+	void operator()( int line_num, gpiod::chip& chip ){
+		
+		// TODO check if line is in use
+		gpiod::line line0( chip.get_line(line_num) );
+
+		// Define a line request	
+		gpiod::line_request lReq;
+		lReq.request_type =lReq.EVENT_RISING_EDGE;
+		line0.request(lReq);
+
+		inspect_line(line0);
+
+		for(;;) 
+		{
+ 			
+			if ( line0.event_wait(std::chrono::nanoseconds(sec)) )
+			{
+				sayhi();
+			}
+		}
+	}
+
+};
+
+
 int main(int argc, char** argv )
 {
 	// Time Reference Helpers
@@ -37,59 +75,29 @@ int main(int argc, char** argv )
 	// Nanoseconds
 	// auto duration = timeNow.time_since_epoch();	
 	
-	// For 10 second ratios 
-	std::chrono::seconds sec(1000);
-
 	/**
 	 * Open the chip and get a line
 	 * - chip.open has built-in exception handling 
 	 * - 2nd arg defaults to chip.OPEN_LOOKUP
 	 * 	 which guesses where to find it. But I know
-	 *   the name of the chip
+	 *       the name of the chip
 	 */ 
 	gpiod::chip chip0("gpiochip0");
 
-	// Blink -- Output
-	gpiod::line line0(chip0.get_line(18));
-	// Input -- Button
-	gpiod::line line1(chip0.get_line(17));
-
-// 	ALT
-//	line0 = chip0.get_line(17);
-
 	std::cout << "Chip:\t" << chip0.name() << std::endl;
-	std::cout << "Inspect Line" << std::endl;
 
-	inspect_line(line0);
-	inspect_line(line1);
-
-	/**
-	 * Construct a line request struct for line0
-	 * 
-	 */ 
-	gpiod::line_request lReq0;
-	gpiod::line_request lReq1;
-
-	lReq0.request_type =lReq0.DIRECTION_OUTPUT;
-	lReq1.request_type =lReq1.EVENT_RISING_EDGE;
+//	lReq0.request_type =lReq0.DIRECTION_OUTPUT;
 
 	/**
 	 * This sets a line with the behavior defined
 	 * by our line request structs
 	 */ 
-	line0.request(lReq0);
-	line1.request(lReq1);
-
 	std::cout << "Waiting... " << std::endl;
 
-	// Wait for button press
-	if(line1.event_wait(std::chrono::nanoseconds(sec)))
-	{
-		line0.set_value(1);	
-	}
-	
+	SingleEventInput evt;
+	std::thread t{ [&chip0, &evt] { evt(17, chip0); } };
 	vis::camera::Camera cam = vis::camera::Camera();
-	cam.run("edge");	
+	cam.run("edge");
 
 	return 0;
 	
