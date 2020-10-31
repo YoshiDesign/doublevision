@@ -6,7 +6,9 @@ include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 add_subdirectory(gpiolib)
 add_subdirectory(visionlib)
+add_subdirectory(asio118)
+
+SET_TARGET_PROPERTIES(asio PROPERTIES LINKER_LANGUAGE CXX)
 
 add_executable( ${PROJECT_NAME} main.cpp )
-
-target_link_libraries( ${PROJECT_NAME} ${OpenCV_LIBS} vision-cpp gpio-cpp gpiod)
+target_link_libraries( ${PROJECT_NAME} ${OpenCV_LIBS} vision-cpp gpio-cpp gpiod asio)
