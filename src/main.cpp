@@ -3,7 +3,9 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <fstream>
 #include <unistd.h>
+#include <cstdlib>
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc.hpp>
@@ -42,27 +44,58 @@ struct SingleEventInput {
 
 	/**
 	 * Construct a line request
-	 */ 
+	 */
+
+	int degrees;
+	int flag = 1;
 	void operator()( int line_num, gpiod::chip& chip ){
-		
+
 		// TODO check if line is in use
 		gpiod::line line0( chip.get_line(line_num) );
-
-		// Define a line request	
 		gpiod::line_request lReq;
-		lReq.request_type =lReq.EVENT_RISING_EDGE;
-		line0.request(lReq);
 
-		inspect_line(line0);
-
-		for(;;) 
-		{
- 			
-			if ( line0.event_wait(std::chrono::nanoseconds(sec)) )
+		// Stream to USB - Arduino
+		std::ofstream outStream;
+		outStream.open("/dev/ttyACM0");
+		if (!outStream )
+		{	
+			LOG("Error");
+			line0.release();
+			flag = 0;
+		}
+		if (flag) {	
+			// Define the line request
+			lReq.request_type =lReq.EVENT_RISING_EDGE;
+			for(;;) 
 			{
-				sayhi();
+				// Define a line request	
+				line0.request(lReq);
+				inspect_line(line0);
+
+				if ( line0.event_wait(std::chrono::nanoseconds(sec)) )
+				{
+					std::cout << "IN: ";
+					std::cin >> degrees;
+					std::cout << "Moving: ";
+					LOG(degrees);	
+					std::string ss = std::to_string(degrees);
+					outStream << ss << std::endl;
+					line0.release();
+				}
 			}
 		}
+	}
+
+};
+
+struct CameraEvent {
+
+
+	void operator()(){
+	
+		vis::camera::Camera cam = vis::camera::Camera();
+		cam.run("edge");
+	
 	}
 
 };
@@ -93,11 +126,15 @@ int main(int argc, char** argv )
 	 * by our line request structs
 	 */ 
 	std::cout << "Waiting... " << std::endl;
-
+	
+	// GPIO Event Listner Executable Struct
 	SingleEventInput evt;
-	std::thread t{ [&chip0, &evt] { evt(17, chip0); } };
-	vis::camera::Camera cam = vis::camera::Camera();
-	cam.run("edge");
+	CameraEvent camEvt;
+	
+	std::thread t { [&chip0, &evt] { evt(17, chip0); } };
+	std::thread c { [&camEvt] { camEvt(); } };
+	t.join();
+	c.join();
 
 	return 0;
 	
