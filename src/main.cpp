@@ -46,34 +46,31 @@ struct SingleEventInput {
 	 * Construct a line request
 	 */
 
-	void operator()( int line_num, gpiod::chip& chip, std::queue<int>& Q ){
+	void operator()(int line_num, gpiod::chip& chip, std::queue<int>& Q ){
 
 		// Hold the line
 		gpiod::line line0( chip.get_line(line_num) );
-		gpiod::line_request lReq;
+		gpiod::line_request lReq0;
 
 		// Define the line request
-		lReq.request_type = lReq.EVENT_RISING_EDGE;
-
-		// Release the line in case it held anything
-		//line0.release();
+		lReq0.request_type = lReq0.EVENT_RISING_EDGE;
 
 		// Stream for USB -> Arduino
 		std::ofstream outStream;
 		outStream.open("/dev/ttyACM0");
 		// Connect to the Arduino
 	
-		// Wait for analog input	
+		// Wait for analog input 
 		for(;;) 
 		{
 			// Define a line request
-			line0.request(lReq);
+			line0.request(lReq0);
 
 			if ( line0.event_wait(std::chrono::nanoseconds(sec)) )
 			{
 
 				// Trigger the injection of the current matrix
-				Q.push(1);	
+				Q.push(line_num);	
 				
 				// Send Signal to Camera and drop the line
 				line0.release();
@@ -94,21 +91,6 @@ struct CameraEvent {
 
 };
 
-struct DataChannel {
-
-	cv::Mat* data;
-	
-	void send()
-	{
-		// Serialize the data and send it to the Arduino
-		std::cout << "IN: ";
-		//std::cin >> degrees;
-		//std::string ss = std::to_string(degrees);
-		//outStream << ss << std::endl;
-
-	}
-
-};
 int main(int argc, char** argv )
 {
 	// Time Reference Helpers
@@ -135,13 +117,16 @@ int main(int argc, char** argv )
 	std::queue<int> Q;
 
 	// GPIO Event Listner w/ Q
-	SingleEventInput evt;
+	SingleEventInput evt1;
+	SingleEventInput evt2;
 
 	// The camera's run() thread w/ Q
 	CameraEvent camEvt;
 
-	std::thread t { [&chip0, &evt, &Q] { evt(17, chip0, Q); } };
 	std::thread c { [&camEvt, &Q, &cam] { camEvt(cam, Q); } };
+	std::thread t { [&chip0, &evt1, &Q] { evt1(17, chip0, Q); } };
+	std::thread e { [&chip0, &evt2, &Q] { evt2(18, chip0, Q); } };
+
 	t.join();
 	c.join();
 

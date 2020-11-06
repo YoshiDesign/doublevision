@@ -87,7 +87,7 @@ void Camera::run(std::queue<int>& Q, const char *type = "default")
 	// Used as processed frame
 	cv::Mat_<cv::Vec3b> outputFrame;
 
-	int toggleProc = 0;
+	bool toggleProc = false;
 	
 	// Acquire the camera resource 
 	cap.release();
@@ -126,10 +126,20 @@ void Camera::run(std::queue<int>& Q, const char *type = "default")
 		if(!Q.empty())
 		{
 			// Remove the signal indication
+			int val = Q.front();
 			Q.pop();
-			// Process the current frame
-			pixelProcess(frame);
+			switch(val) {
+			
+				case 17:
+					pixelProcess(frame);
+					break;
+				case  18:
+					toggleProc = !toggleProc;
+					break;
+			}
 		}
+		if (toggleProc)
+			pixelProcess(frame);
 
 		if(!outputFrame.empty())
 			cv::imshow("Hello", frame);
