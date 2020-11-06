@@ -6,6 +6,7 @@
 #include <fstream>
 #include <unistd.h>
 #include <cstdlib>
+#include <queue>
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc.hpp>
@@ -37,7 +38,6 @@ void inspect_line(gpiod::line& ln)
 		<< "\nLine is_open_source:\t" << ln.is_open_source()
 		<< "\n____________________" << std::endl;
 
-
 }
 
 struct SingleEventInput {
@@ -46,43 +46,39 @@ struct SingleEventInput {
 	 * Construct a line request
 	 */
 
-	int degrees;
-	int flag = 1;
-	void operator()( int line_num, gpiod::chip& chip ){
+	void operator()( int line_num, gpiod::chip& chip, std::queue<int>& Q ){
 
-		// TODO check if line is in use
+		// Hold the line
 		gpiod::line line0( chip.get_line(line_num) );
 		gpiod::line_request lReq;
 
-		// Stream to USB - Arduino
+		// Define the line request
+		lReq.request_type = lReq.EVENT_RISING_EDGE;
+
+		// Release the line in case it held anything
+		//line0.release();
+
+		// Stream for USB -> Arduino
 		std::ofstream outStream;
 		outStream.open("/dev/ttyACM0");
-		if (!outStream )
-		{	
-			LOG("Error");
-			line0.release();
-			flag = 0;
-		}
-		if (flag) {	
-			// Define the line request
-			lReq.request_type =lReq.EVENT_RISING_EDGE;
-			for(;;) 
-			{
-				// Define a line request	
-				line0.request(lReq);
-				inspect_line(line0);
+		// Connect to the Arduino
+	
+		// Wait for analog input	
+		for(;;) 
+		{
+			// Define a line request
+			line0.request(lReq);
 
-				if ( line0.event_wait(std::chrono::nanoseconds(sec)) )
-				{
-					std::cout << "IN: ";
-					std::cin >> degrees;
-					std::cout << "Moving: ";
-					LOG(degrees);	
-					std::string ss = std::to_string(degrees);
-					outStream << ss << std::endl;
-					line0.release();
-				}
+			if ( line0.event_wait(std::chrono::nanoseconds(sec)) )
+			{
+
+				// Trigger the injection of the current matrix
+				Q.push(1);	
+				
+				// Send Signal to Camera and drop the line
+				line0.release();
 			}
+
 		}
 	}
 
@@ -90,17 +86,29 @@ struct SingleEventInput {
 
 struct CameraEvent {
 
-
-	void operator()(){
+	void operator()(vis::camera::Camera& cam, std::queue<int>& Q){
 	
-		vis::camera::Camera cam = vis::camera::Camera();
-		cam.run("edge");
+		cam.run(Q, "default");
 	
 	}
 
 };
 
+struct DataChannel {
 
+	cv::Mat* data;
+	
+	void send()
+	{
+		// Serialize the data and send it to the Arduino
+		std::cout << "IN: ";
+		//std::cin >> degrees;
+		//std::string ss = std::to_string(degrees);
+		//outStream << ss << std::endl;
+
+	}
+
+};
 int main(int argc, char** argv )
 {
 	// Time Reference Helpers
@@ -117,22 +125,23 @@ int main(int argc, char** argv )
 	 */ 
 	gpiod::chip chip0("gpiochip0");
 
+	// Camera
+	vis::camera::Camera cam = vis::camera::Camera();
+
+	// Chip shoutout
 	std::cout << "Chip:\t" << chip0.name() << std::endl;
 
-//	lReq0.request_type =lReq0.DIRECTION_OUTPUT;
+	// Signal queue - Queue for Extensible reasons
+	std::queue<int> Q;
 
-	/**
-	 * This sets a line with the behavior defined
-	 * by our line request structs
-	 */ 
-	std::cout << "Waiting... " << std::endl;
-	
-	// GPIO Event Listner Executable Struct
+	// GPIO Event Listner w/ Q
 	SingleEventInput evt;
+
+	// The camera's run() thread w/ Q
 	CameraEvent camEvt;
-	
-	std::thread t { [&chip0, &evt] { evt(17, chip0); } };
-	std::thread c { [&camEvt] { camEvt(); } };
+
+	std::thread t { [&chip0, &evt, &Q] { evt(17, chip0, Q); } };
+	std::thread c { [&camEvt, &Q, &cam] { camEvt(cam, Q); } };
 	t.join();
 	c.join();
 

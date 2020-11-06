@@ -11,3 +11,4 @@ build/
 *.la
 *.png
 *.jpg
+rnd/

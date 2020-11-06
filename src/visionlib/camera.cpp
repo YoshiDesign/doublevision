@@ -1,11 +1,7 @@
-#include <iostream>
 #include <vector>
 #include <sstream>
 #include <string>
 #include <unistd.h>
-#include <opencv2/opencv.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/videoio.hpp>
 #include "visionlib.hpp"
 
 #define LOG(m) std::cout << m << std::endl
@@ -13,11 +9,60 @@
 
 namespace vis { namespace camera {
 
+
+void pixelProcess(cv::Mat_<cv::Vec3b>& img){
+
+	int r,g,b;
+	int div = img.rows * img.cols;
+	r = g = b = 0;
+
+
+	cv::Vec3b px;
+
+	for (int i = 0; i < img.rows; i++)
+	{
+		for (int j = 0; j < img.cols; j++)
+		{
+		
+			px = img.at<cv::Vec3b>(i,j);
+			r += px[2];
+			g += px[1];
+			b += px[0];
+
+
+		}
+	}
+
+	int rsub = r / div;
+	int gsub = g / div;
+	int bsub = b / div;
+
+	cv::MatIterator_<cv::Vec3b> itBegin = img.begin();
+	cv::MatIterator_<cv::Vec3b> itEnd = img.end();
+
+	for ( ; itBegin != itEnd ; itBegin++)
+	{
+
+		(*itBegin)[0] -= bsub;
+		(*itBegin)[1] -= gsub;
+		(*itBegin)[2] -= rsub;
+
+		if ((*itBegin)[0] < 0) (*itBegin)[0] = 255;
+		if ((*itBegin)[1] < 0) (*itBegin)[1] = 255;
+		if ((*itBegin)[2] < 0) (*itBegin)[2] = 255;
+
+	}
+
+//	std::cout << "Snapshot:\n" << "R:\t" << r/div << "\nG:\t" << g/div << "\nB:\t" << b/div << std::endl;
+		
+}
+
 /*
  * A frame processor function - Edge detection
  */ 
-void detect_edges(cv::Mat& img, cv::Mat& out)
+void detect_edges(cv::Mat_<cv::Vec3b>& img, cv::Mat_<cv::Vec3b>& out)
 {
+
 	if (img.channels() == 3)
 	{
 		cv::cvtColor(img, out, cv::COLOR_BGR2GRAY);
@@ -26,6 +71,7 @@ void detect_edges(cv::Mat& img, cv::Mat& out)
 	cv::Canny(out, out, 100, 200);
 	// invert image binary
 	cv::threshold(out, out, 128, 255, cv::THRESH_BINARY_INV);
+	
 }
 
 Camera::Camera(){
@@ -34,12 +80,14 @@ Camera::Camera(){
 }
 Camera::Camera(int device): device{device}{}
 
-void Camera::run(const char *type = "default")
+void Camera::run(std::queue<int>& Q, const char *type = "default")
 {	
 	// Original frame
-	cv::Mat frame;
+	cv::Mat_<cv::Vec3b> frame;
 	// Used as processed frame
-	cv::Mat outputFrame;
+	cv::Mat_<cv::Vec3b> outputFrame;
+
+	int toggleProc = 0;
 	
 	// Acquire the camera resource 
 	cap.release();
@@ -54,12 +102,12 @@ void Camera::run(const char *type = "default")
 		// Perform edge detection when broadcasting
 		useProcess = 1;
 		setFrameProcessor(detect_edges);
-		process(frame, outputFrame);
 	}
 
 	// Capture loop
 	for (;;)
 	{
+
 		if (cv::waitKey(5) >= 0)
 			break;
 
@@ -74,7 +122,17 @@ void Camera::run(const char *type = "default")
 			outputFrame = frame;
 		}
 
-		cv::imshow("Hello", outputFrame);
+		// Send the current output frame
+		if(!Q.empty())
+		{
+			// Remove the signal indication
+			Q.pop();
+			// Process the current frame
+			pixelProcess(frame);
+		}
+
+		if(!outputFrame.empty())
+			cv::imshow("Hello", frame);
 	}
 
 }
@@ -82,7 +140,7 @@ void Camera::run(const char *type = "default")
 /*
  * For video - Detect when we've run out of frames
  */ 
-bool Camera::readNextFrame(cv::Mat& frame)
+bool Camera::readNextFrame(cv::Mat_<cv::Vec3b>& frame)
 {
 	if (images.size() == 0)
 	{
@@ -97,7 +155,7 @@ bool Camera::readNextFrame(cv::Mat& frame)
 /*
  * Set the callback function to be executed when we call process()
  */ 
-void Camera::setFrameProcessor(void(*frameProCallback)(cv::Mat&, cv::Mat&))
+void Camera::setFrameProcessor(void(*frameProCallback)(cv::Mat_<cv::Vec3b>&, cv::Mat_<cv::Vec3b>&))
 {
 	//frameproc = 0;
 	process = frameProCallback;
