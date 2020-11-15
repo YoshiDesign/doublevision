@@ -126,18 +126,24 @@ void Camera::run(std::queue<int>& Q, const char *type = "default")
 		if(!Q.empty())
 		{
 			// Remove the signal indication
-			int val = Q.front();
+			 nt val = Q.front();
 			Q.pop();
 			switch(val) {
+				/**
+				 * Effects of each gpio pin reading
+				 */ 
 			
 				case 17:
+					// Snapshot
 					pixelProcess(frame);
 					break;
 				case  18:
+					// Toggle filter layer
 					toggleProc = !toggleProc;
 					break;
 			}
 		}
+
 		if (toggleProc)
 			pixelProcess(frame);
 

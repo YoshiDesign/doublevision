@@ -27,7 +27,6 @@ void sayhi()
 }
 void inspect_line(gpiod::line& ln)
 {
-		
 	std::cout << "...Inspecting " << ln.name()
 		<< "Line Active State:\t" << ln.active_state() 
 		<< "\nLine Offset:\t" << ln.offset()
@@ -37,13 +36,15 @@ void inspect_line(gpiod::line& ln)
 		<< "\nLine is_open_drain:\t" << ln.is_open_drain()
 		<< "\nLine is_open_source:\t" << ln.is_open_source()
 		<< "\n____________________" << std::endl;
-
 }
 
 struct SingleEventInput {
 
 	/**
 	 * Construct a line request
+	 * An integer representing the GPIO Pin on the R-pi
+	 * Is pushed onto the Queue where the Camera module
+	 * can detect and handle it. The queue is a shared resource
 	 */
 
 	void operator()(int line_num, gpiod::chip& chip, std::queue<int>& Q ){
