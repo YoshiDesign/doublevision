@@ -10,7 +10,7 @@ CMakeLists.txt included for easy compiling.
 
 ### Dynamic Libraries
 
-The OpenCV modules are assumed to be dynamically linked. You'll have to add any OpenCV2 modules to your compiler's linked libraries.
+The OpenCV modules are assumed to be dynamically linked. Simply installing OpenCV on your machine will add these files to your linker's search path.
 
 ### Static Libraries
 
