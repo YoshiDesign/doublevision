@@ -6,7 +6,7 @@ A C++ library with the following tools at your disposal:
 - GPIO with libgpiod
 - Computer Vision with OpenCV2
 
-CMakeLists.txt included for easy compiling.
+CMakeLists.txt included for easy builds.
 
 ### Dynamic Libraries
 
@@ -15,3 +15,7 @@ The OpenCV modules are assumed to be dynamically linked. Simply installing OpenC
 ### Static Libraries
 
 Libgpiod and ASIO are included as static libraries.
+
+### TODOs
+
+ - Writing a UART driver for serial comm to external μCU.
